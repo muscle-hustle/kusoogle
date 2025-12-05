@@ -326,6 +326,7 @@ async function processArticle(article: Article, env: Env) {
       url: article.url,
       tags: article.tags.map(t => t.name),
       createdAt: article.created_at,
+      updatedAt: article.updated_at, // 更新日時を保存（cronでデータ更新判定に使用）
       author: article.user.id,
       likesCount: article.likes_count
     }
@@ -346,24 +347,29 @@ export default {
     const autoUpdateCalendars = config.calendars.filter(c => c.autoUpdate);
     
     for (const calendar of autoUpdateCalendars) {
-    
-    for (const calendar of latestCalendars) {
       // 2-1. カレンダーIDをURLから抽出
       const calendarId = extractCalendarId(calendar.url);
       
-      // 2-2. 既存の記事IDを取得（Vectorizeから）
-      const existingIds = await getExistingArticleIds(env.VECTORIZE_INDEX);
+      // 2-2. 既存の記事データを取得（Vectorizeから）
+      const existingArticles = await getExistingArticles(env.VECTORIZE_INDEX);
       
       // 2-3. Qiita APIで記事を取得（全ページ）
       const articles = await fetchAllQiitaArticles(calendarId);
       
-      // 2-4. 新規記事のみ処理
+      // 2-4. 新規記事または更新された記事を処理
       for (const article of articles) {
-        if (existingIds.includes(article.id)) {
-          continue; // 既存記事はスキップ
-        }
+        const existing = existingArticles.find(a => a.id === article.id);
         
-        await processArticle(article, env);
+        if (!existing) {
+          // 新規記事
+          await processArticle(article, env);
+        } else {
+          // 既存記事: 更新日時を比較して、新しい場合は更新
+          const existingUpdatedAt = existing.metadata.updatedAt;
+          if (new Date(article.updated_at) > new Date(existingUpdatedAt)) {
+            await processArticle(article, env);
+          }
+        }
       }
     }
   }
@@ -439,6 +445,7 @@ interface VectorizeArticle {
     // body: 保存しない（Embedding生成にのみ一時的に使用）
     tags: string[];              // タグ（文字列配列）
     createdAt: string;           // 投稿日時（ISO 8601）
+    updatedAt: string;           // 更新日時（ISO 8601）- cronで取得した記事の更新日時と比較してデータ更新を判定
     author: string;              // 投稿者ID
     likesCount: number;          // いいね数
   };
@@ -530,7 +537,8 @@ export interface Article {
   url: string;
   // body: 削除（記事本文は保存しない）
   tags: string[];
-  createdAt: string;
+  createdAt: string; // 投稿日時（ISO 8601）
+  updatedAt: string; // 更新日時（ISO 8601）
   author: string;
   likesCount: number;
 }
@@ -674,38 +682,138 @@ NEXT_PUBLIC_SEARCH_API_URL=https://search-api.kusoogle.workers.dev
 - 開発環境: `.env.local`ファイルに記述
 - 本番環境: Cloudflare Dashboardの「Workers & Pages」→「Settings」→「Variables」で設定
 
-### 9.4 開発コマンド
+### 9.4 Cloudflare Workersのローカル開発
+
+#### 9.4.1 Wrangler CLIのセットアップ
+
+```bash
+# Wrangler CLIのインストール（グローバル）
+npm install -g wrangler
+
+# または、プロジェクトローカルにインストール（推奨）
+bun add -d wrangler
+```
+
+#### 9.4.2 ローカル開発の起動方法
+
+**基本的な使い方**:
+```bash
+# 各Workerディレクトリで実行
+cd apps/workers/search
+wrangler dev
+
+# または、ルートから実行
+bun run dev:search
+bun run dev:data-collection
+```
+
+**`wrangler dev`の動作**:
+- ローカルサーバーが起動（デフォルト: `http://localhost:8787`）
+- ファイル変更を自動検知してリロード（ホットリロード）
+- 本番環境と同様の環境で実行される
+
+#### 9.4.3 wrangler.tomlの設定
+
+各Workerディレクトリに`wrangler.toml`を作成し、バインディングと環境変数を設定します。
+
+**Search API Workerの例** (`apps/workers/search/wrangler.toml`):
+```toml
+name = "kusoogle-search"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Vectorizeバインディング
+[[vectorize]]
+binding = "VECTORIZE_INDEX"
+index_name = "kusoogle-articles"
+
+# AI Workersバインディング
+[[ai]]
+binding = "AI"
+
+# 環境変数（開発環境用）
+[vars]
+ENVIRONMENT = "development"
+```
+
+**Data Collection Workerの例** (`apps/workers/data-collection/wrangler.toml`):
+```toml
+name = "kusoogle-data-collection"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Vectorizeバインディング
+[[vectorize]]
+binding = "VECTORIZE_INDEX"
+index_name = "kusoogle-articles"
+
+# AI Workersバインディング
+[[ai]]
+binding = "AI"
+
+# Cron Triggerの設定
+[triggers]
+crons = ["0 18 * * *"]  # JST 3:00（UTC 18:00）
+
+# 環境変数
+[vars]
+ENVIRONMENT = "development"
+```
+
+#### 9.4.4 ローカル開発時の注意点
+
+1. **バインディングの扱い**:
+   - Vectorize、AI Workersなどのバインディングは、`wrangler.toml`で設定
+   - ローカル開発時も実際のCloudflareリソースに接続される（認証が必要）
+   - 初回実行時に`wrangler login`で認証が必要
+
+2. **環境変数**:
+   - `wrangler.toml`の`[vars]`セクションで設定
+   - または、`.dev.vars`ファイルで設定（`.gitignore`に含める）
+
+3. **Cron Trigger**:
+   - ローカル開発時はCron Triggerは実行されない
+   - 手動でトリガーする場合は、`wrangler dev --test-scheduled`を使用
+
+4. **Vectorizeインデックス**:
+   - ローカル開発時も実際のVectorizeインデックスを使用
+   - 開発用のインデックスを別途作成することも可能
+
+#### 9.4.5 開発コマンド
 
 ```bash
 # パッケージインストール
 bun install
 
+# Cloudflareにログイン（初回のみ）
+wrangler login
+
 # Vectorizeインデックスの作成（初回のみ）
 wrangler vectorize create kusoogle-articles --dimensions=768 --metric=cosine
 
 # フロントエンド開発
-bun --bun dev                    # Next.js開発サーバー（Bunで起動）
-# または
-bun run dev                      # package.jsonのスクリプト実行
+bun run dev:frontend              # Next.js開発サーバー
 
 # Workers開発
-bun run dev:workers              # Wrangler dev
-bun run dev:search                # Search API Workerのみ
-bun run dev:data-collection       # Data Collection Workerのみ
+bun run dev:search                # Search API Worker（http://localhost:8787）
+bun run dev:data-collection       # Data Collection Worker
+
+# 特定のポートで起動
+cd apps/workers/search
+wrangler dev --port 8788
+
+# リモートデバッグ（本番環境のログを確認）
+wrangler dev --remote
 
 # ビルド
-bun run build                    # 全プロジェクトをビルド
+bun run build                     # 全プロジェクトをビルド
 
 # テスト
-bun test                         # 全テストを実行
-bun test apps/frontend           # 特定パッケージのテスト
+bun test                          # 全テストを実行
 
 # デプロイ
-# 1. Vectorizeインデックスの確認（既に作成済み）
-# 2. Workersのデプロイ
-bun run deploy:workers           # 全Workersをデプロイ
-# 3. フロントエンドのデプロイ
-bun run deploy:frontend          # Cloudflare Pagesにデプロイ
+bun run deploy:search             # Search API Workerをデプロイ
+bun run deploy:data-collection    # Data Collection Workerをデプロイ
 ```
 
 ### 9.5 package.jsonの例
