@@ -84,46 +84,22 @@
 ## 実装仕様（確定版）
 
 ### データモデル
-```typescript
-interface VectorizeArticle {
-  id: string;                    // 記事ID（Qiita記事ID）
-  values: number[];              // Embeddingベクトル（768次元）
-  // 記事本文はEmbedding生成にのみ使用し、保存しない（Qiita利用規約遵守のため）
-  metadata: {
-    title: string;               // 記事タイトル
-    url: string;                 // 記事URL
-    // body: 保存しない（Embedding生成にのみ一時的に使用）
-    tags: string[];              // タグ（文字列配列）
-    createdAt: string;           // 投稿日時（ISO 8601）
-    author: string;              // 投稿者ID
-    likesCount: number;          // いいね数
-  };
-}
-```
+**VectorizeArticle**:
+- `id`: 記事ID（Qiita記事ID）
+- `values`: Embeddingベクトル
+- `metadata`: メタデータ（タイトル、URL、タグ、作成日時、著者、いいね数）
+
+**注意**: 記事本文はEmbedding生成にのみ使用し、保存しない（Qiita利用規約遵守のため）
 
 ### Embedding生成処理
-```typescript
-// タイトル + タグ + 本文でEmbedding生成（本文は一時的にのみ使用）
-const tagsText = article.tags.map(t => t.name).join(' ');
-const embedding = await env.AI.run('@cf/baai/bge-base-en-v1.5', {
-  text: `${article.title}\n${tagsText}\n${article.body}`
-});
-// 記事本文はここで破棄され、ベクトルのみが保存される
 
-// Vectorizeに保存（ベクトルのみ、記事本文は含まない）
-await env.VECTORIZE_INDEX.insert([{
-  id: article.id,
-  values: embedding.data[0],
-  metadata: {
-    title: article.title,
-    url: article.url,
-    tags: article.tags.map(t => t.name),
-    createdAt: article.created_at,
-    author: article.user.id,
-    likesCount: article.likes_count
-  }
-}]);
-```
+**処理フロー**:
+- タイトル、タグ、本文を結合してEmbedding生成
+- 記事本文はEmbedding生成後に破棄され、ベクトルのみが保存される
+
+**Vectorizeへの保存**:
+- ベクトルのみを保存（記事本文は含まない）
+- メタデータにはタイトル、URL、タグ、作成日時、著者、いいね数のみを含める
 
 ### 検索結果表示
 - タイトル、URL、タグ、著者、投稿日時、いいね数のみ表示

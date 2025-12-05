@@ -85,26 +85,10 @@ kusoogle/
 - 入力検証: 1文字以上500文字以下、特殊文字のサニタイズ
 
 **Props**:
-```typescript
-interface SearchFormProps {
-  onSearch: (query: string) => Promise<void>;
-}
-```
+- `onSearch`: 検索クエリを受け取り、検索を実行する関数
 
-**Server Actionの実装例**:
-```typescript
-'use server';
-
-export async function searchArticles(query: string) {
-  // Cloudflare WorkersのSearch APIを呼び出し
-  const response = await fetch(`${SEARCH_API_URL}/api/search`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query })
-  });
-  return await response.json();
-}
-```
+**実装**:
+- Server Actionを使用してCloudflare WorkersのSearch APIを呼び出す
 
 #### 2.2.2 SearchResults
 **役割**: 検索結果を一覧表示
@@ -115,12 +99,8 @@ export async function searchArticles(query: string) {
 - 無限スクロールは実装しない（topK=10で固定）
 
 **Props**:
-```typescript
-interface SearchResultsProps {
-  results: SearchResult[];
-  isLoading: boolean;
-}
-```
+- `results`: 検索結果の配列
+- `isLoading`: ローディング状態
 
 #### 2.2.3 ArticleCard
 **役割**: 個別の記事カードを表示
@@ -136,11 +116,7 @@ interface SearchResultsProps {
 - 出典表示（「出典: Qiita」）
 
 **Props**:
-```typescript
-interface ArticleCardProps {
-  article: SearchResult;
-}
-```
+- `article`: 表示する記事データ
 
 #### 2.2.4 ExplanationCard（Phase 2）
 **役割**: 類似アプリの説明を表示
@@ -150,12 +126,8 @@ interface ArticleCardProps {
 - スケルトンUIでローディング状態を表示
 
 **Props**:
-```typescript
-interface ExplanationCardProps {
-  query: string;
-  articleIds: string[];
-}
-```
+- `query`: 検索クエリ
+- `articleIds`: 説明対象の記事ID配列
 
 ### 2.3 状態管理
 
@@ -192,28 +164,13 @@ POST /api/search
 ```
 
 #### 3.1.3 リクエストハンドラー
-```typescript
-// 疑似コード
-app.post('/api/search', async (c) => {
-  const { query } = await c.req.json();
-  
-  // 1. クエリをEmbedding化
-  const embedding = await env.AI.run('@cf/baai/bge-base-en-v1.5', {
-    text: query
-  });
-  
-  // 2. Vectorizeで検索
-  const results = await env.VECTORIZE_INDEX.query(embedding.data[0], {
-    topK: 10,
-    returnMetadata: true
-  });
-  
-  // 3. 結果を整形（記事本文の要約は含めない）
-  const formattedResults = formatResults(results);
-  
-  return c.json({ results: formattedResults });
-});
-```
+
+**処理フロー**:
+1. リクエストボディからクエリを取得
+2. AI Workersを使用してクエリをEmbedding化（`@cf/baai/bge-base-en-v1.5`）
+3. Vectorizeで類似度検索（topK=10、メタデータを返却）
+4. 結果を整形（記事本文の要約は含めない）
+5. JSON形式でレスポンスを返却
 
 #### 3.1.4 エラーハンドリング
 
@@ -225,44 +182,20 @@ app.post('/api/search', async (c) => {
 - **タイムアウト**: 504 Gateway Timeoutを返却
 
 **エラーレスポンス形式**:
-```typescript
-{
-  error: ErrorType;
-  message: string;
-  details?: unknown;
-}
-```
+- `error`: エラータイプ
+- `message`: エラーメッセージ
+- `details`: 詳細情報（オプショナル）
 
 ### 3.2 Data Collection Worker
 
 #### 3.2.1 設定ファイル
 
 **設定ファイル形式** (`config/calendars.json`):
-```json
-{
-  "calendars": [
-    {
-      "id": "2015-01",
-      "url": "https://qiita.com/advent-calendar/2015/kuso-app",
-      "year": 2015,
-      "autoUpdate": false
-    },
-    {
-      "id": "2015-02",
-      "url": "https://qiita.com/advent-calendar/2015/kuso-app2",
-      "year": 2015,
-      "autoUpdate": false
-    },
-    // ... 自動更新対象外のカレンダー
-    {
-      "id": "2025-01",
-      "url": "https://qiita.com/advent-calendar/2025/kuso-app",
-      "year": 2025,
-      "autoUpdate": true
-    }
-  ]
-}
-```
+- `calendars`: カレンダー設定の配列
+  - `id`: カレンダーID
+  - `url`: カレンダーURL
+  - `year`: 年
+  - `autoUpdate`: 自動更新フラグ（`true`の場合、Cron Triggerで日次更新を行う）
 
 **プロパティ説明**:
 - `autoUpdate`: `true`の場合、Cron Triggerで日次更新を行う。`false`の場合は初期データ取得時のみ処理する。
@@ -275,95 +208,55 @@ app.post('/api/search', async (c) => {
 - **日次更新**: Cloudflare Cron Triggers（1日1回、深夜 JST 3:00に実行）
 
 #### 3.2.3 Qiita APIの使用方法
-- **エンドポイント**: `/api/v2/advent_calendars/{calendar_id}/items`
-- **カレンダーID**: 設定ファイルから取得
-- **認証**: 不要（公開API）
-- **レート制限**: 1時間あたり60リクエスト（認証なしの場合）
-- **ページネーション**: ページごとに最大100件、全ページを取得
+
+**注意**: Qiita APIには`advent_calendars`エンドポイントが存在しません。
+そのため、カレンダーページのHTMLを解析して記事IDを抽出します。
+
+- **カレンダーページURL**: 設定ファイルから取得（例: `https://qiita.com/advent-calendar/2025/kuso-app`）
+- **取得方法**:
+  1. カレンダーページのHTMLを取得
+  2. HTMLから記事URL（`/items/{article_id}`）を正規表現で抽出
+  3. 各記事IDに対してQiita APIで詳細を取得（`/api/v2/items/{article_id}`）
+- **認証**: オプショナル（アクセストークンを使用可能）
+  - **認証なし**: 1時間あたり60リクエスト
+  - **認証あり**: 1時間あたり1000リクエスト（推奨）
+- **アクセストークンの設定**: Cloudflare Workersのシークレットとして設定
+  - 設定方法: `wrangler secret put QIITA_ACCESS_TOKEN`
+- **負荷**: 初期登録時と1日1回の更新時のみ使用されるため、サーバーへの負荷は最小限
+
+**取得フロー**:
+```
+カレンダーページHTML取得 → 記事ID抽出 → 各記事の詳細をQiita APIで取得
+```
 
 #### 3.2.4 初期データ取得処理（初回リリース時のみ）
 
-```typescript
-// 初期データ取得用のスクリプト
-async function initializeData(env: Env) {
-  // 1. 設定ファイルを読み込み
-  const config = await loadCalendarConfig();
-  
-  // 2. 自動更新対象外のカレンダーを全件取得（autoUpdate: false）
-  const pastCalendars = config.calendars.filter(c => !c.autoUpdate);
-  
-  for (const calendar of pastCalendars) {
-    // 2-1. カレンダーIDをURLから抽出
-    const calendarId = extractCalendarId(calendar.url);
-    
-    // 2-2. Qiita APIで記事を取得（全ページ）
-    const articles = await fetchAllQiitaArticles(calendarId);
-    
-    // 2-3. 各記事を処理
-    for (const article of articles) {
-      await processArticle(article, env);
-    }
-    
-    // レート制限を遵守（リクエスト間に間隔を設ける）
-    await sleep(60000); // 60秒待機
-  }
-}
+**処理フロー**:
+1. 設定ファイルを読み込み
+2. 全てのカレンダー（autoUpdate: true/false問わず）を処理
+3. 各カレンダーについて:
+   - カレンダーページのHTMLから記事IDを抽出
+   - Qiita APIで各記事の詳細を取得
+   - 各記事を処理（Embedding化、Vectorizeに保存）
+4. レート制限を遵守するため、リクエスト間に適切な間隔を設ける
 
-async function processArticle(article: Article, env: Env) {
-  // Embedding化（タイトル + タグ + 本文）
-  const tagsText = article.tags.map(t => t.name).join(' ');
-  const embedding = await env.AI.run('@cf/baai/bge-base-en-v1.5', {
-    text: `${article.title}\n${tagsText}\n${article.body}`
-  });
-  // 記事本文はここで破棄され、ベクトルのみが保存される
-  
-  // Vectorizeに保存
-  await env.VECTORIZE_INDEX.insert([{
-    id: article.id,
-    values: embedding.data[0],
-    metadata: {
-      title: article.title,
-      url: article.url,
-      tags: article.tags.map(t => t.name),
-      createdAt: article.created_at,
-      updatedAt: article.updated_at, // 更新日時を保存（cronでデータ更新判定に使用）
-      author: article.user.id,
-      likesCount: article.likes_count
-    }
-  }]);
-}
-```
+**記事処理**:
+- タイトル、タグ、本文を結合してEmbedding化（`@cf/baai/bge-base-en-v1.5`）
+- 記事本文はEmbedding生成後に破棄され、ベクトルのみが保存される
+- Vectorizeに保存するメタデータ: タイトル、URL、タグ、作成日時、更新日時、著者、いいね数
 
 #### 3.2.5 日次更新処理（autoUpdate: trueのカレンダーのみ）
 
-```typescript
-// 日次更新用のWorker
-export default {
-  async scheduled(event, env, ctx) {
-    // 1. 設定ファイルを読み込み
-    const config = await loadCalendarConfig();
-    
-    // 2. 自動更新対象のカレンダーのみ取得（autoUpdate: true）
-    const autoUpdateCalendars = config.calendars.filter(c => c.autoUpdate);
-    
-    for (const calendar of autoUpdateCalendars) {
-      // 2-1. カレンダーIDをURLから抽出
-      const calendarId = extractCalendarId(calendar.url);
-      
-      // 2-2. 既存の記事データを取得（Vectorizeから）
-      const existingArticles = await getExistingArticles(env.VECTORIZE_INDEX);
-      
-      // 2-3. Qiita APIで記事を取得（全ページ）
-      const articles = await fetchAllQiitaArticles(calendarId);
-      
-      // 2-4. 新規記事または更新された記事を処理
-      for (const article of articles) {
-        const existing = existingArticles.find(a => a.id === article.id);
-        
-        if (!existing) {
-          // 新規記事
-          await processArticle(article, env);
-        } else {
+**処理フロー**:
+1. 設定ファイルを読み込み
+2. 自動更新対象のカレンダー（autoUpdate: true）のみを処理
+3. 各カレンダーについて:
+   - カレンダーページのHTMLから記事IDを抽出
+   - 既存の記事データを取得（Vectorizeから）
+   - Qiita APIで各記事の詳細を取得
+   - 新規記事または更新された記事を処理:
+     - 新規記事: 処理してVectorizeに保存
+     - 既存記事: 更新日時を比較し、新しい場合は更新
           // 既存記事: 更新日時を比較して、新しい場合は更新
           const existingUpdatedAt = existing.metadata.updatedAt;
           if (new Date(article.updated_at) > new Date(existingUpdatedAt)) {
@@ -377,22 +270,20 @@ export default {
 ```
 
 #### 3.2.6 レート制限対応
-- Qiita APIのレート制限を遵守（1時間あたり60リクエスト）
-- 初期データ取得時: リクエスト間に適切な間隔を設ける（最小60秒間隔）
+- Qiita APIのレート制限を遵守
+  - **認証なし**: 制限あり（デフォルト）
+  - **認証あり**: レート制限が緩和される（推奨）
+- アクセストークンが設定されている場合は自動的に認証付きリクエストを使用
+- 初期データ取得時: リクエスト間に適切な間隔を設ける（認証状態に応じて自動調整）
 - 日次更新時: 新規記事のみ処理するため、レート制限に余裕がある
 - エラー時のリトライロジックを実装（最大3回、指数バックオフ）
 - 429エラー（レート制限超過）の場合は待機してリトライ
 
 #### 3.2.7 カレンダーIDの抽出
-```typescript
-// URLからカレンダーIDを抽出
-// 例: https://qiita.com/advent-calendar/2025/kuso-app
-//     → calendar_id: "kuso-app", year: 2025
-function extractCalendarId(url: string): string {
-  const match = url.match(/advent-calendar\/\d+\/(.+)$/);
-  return match ? match[1] : '';
-}
-```
+
+**処理**:
+- URLからカレンダーIDを抽出（正規表現を使用）
+- 例: `https://qiita.com/advent-calendar/2025/kuso-app` → `kuso-app`
 
 ### 3.3 Explanation API Worker（Phase 2）
 
@@ -402,15 +293,11 @@ POST /api/explain
 ```
 
 #### 3.3.2 リクエストハンドラー
-```typescript
-// 疑似コード
-app.post('/api/explain', async (c) => {
-  const { query, articleIds } = await c.req.json();
-  
-  // 1. 記事データを取得
-  const articles = await getArticlesByIds(articleIds);
-  
-  // 2. LLMで説明生成
+
+**処理フロー**:
+1. リクエストボディからクエリと記事IDリストを取得
+2. 記事IDリストから記事データを取得
+3. LLMで説明生成
   const explanation = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
     messages: [{
       role: "system",
@@ -434,45 +321,37 @@ app.post('/api/explain', async (c) => {
 - **次元数**: 768（`@cf/baai/bge-base-en-v1.5`の次元数）
 - **メタデータサイズ制限**: 現在の設計（タイトル、URL、タグ、投稿日時、著者、いいね数）は制限内と判断
 
-```typescript
-interface VectorizeArticle {
-  id: string;                    // 記事ID（Qiita記事ID）
-  values: number[];              // Embeddingベクトル（768次元）
-  // 記事本文はEmbedding生成にのみ使用し、保存しない（Qiita利用規約遵守のため）
-  metadata: {
-    title: string;               // 記事タイトル
-    url: string;                 // 記事URL
-    // body: 保存しない（Embedding生成にのみ一時的に使用）
-    tags: string[];              // タグ（文字列配列）
-    createdAt: string;           // 投稿日時（ISO 8601）
-    updatedAt: string;           // 更新日時（ISO 8601）- cronで取得した記事の更新日時と比較してデータ更新を判定
-    author: string;              // 投稿者ID
-    likesCount: number;          // いいね数
-  };
-}
-```
+**データ構造**:
+- `id`: 記事ID（Qiita記事ID）
+- `values`: Embeddingベクトル（768次元）
+- `metadata`: メタデータ
+  - `title`: 記事タイトル
+  - `url`: 記事URL
+  - `tags`: タグ（文字列配列）
+  - `createdAt`: 投稿日時（ISO 8601）
+  - `updatedAt`: 更新日時（ISO 8601）- cronで取得した記事の更新日時と比較してデータ更新を判定
+  - `author`: 投稿者ID
+  - `likesCount`: いいね数
+
+**注意**: 記事本文はEmbedding生成にのみ使用し、保存しない（Qiita利用規約遵守のため）
 
 **インデックスの作成方法**:
-```bash
-# Wrangler CLIで作成
-wrangler vectorize create kusoogle-articles --dimensions=768 --metric=cosine
-```
+- Wrangler CLIで作成（`wrangler vectorize create`コマンドを使用）
+- 次元数: 768、メトリック: cosine
 
 ### 4.2 検索結果スキーマ
 
-```typescript
-interface SearchResult {
-  id: string;
-  title: string;
-  url: string;
-  similarity: number;            // 類似度スコア（0-1、コサイン類似度）
-  // summary: 削除（記事本文の要約は表示しない - Qiita利用規約遵守のため）
-  tags: string[];
-  createdAt: string;
-  author: string;
-  likesCount: number;
-}
-```
+**データ構造**:
+- `id`: 記事ID
+- `title`: 記事タイトル
+- `url`: 記事URL
+- `similarity`: 類似度スコア（0-1、コサイン類似度）
+- `tags`: タグ
+- `createdAt`: 投稿日時
+- `author`: 投稿者ID
+- `likesCount`: いいね数
+
+**注意**: 記事本文の要約は表示しない（Qiita利用規約遵守のため）
 
 **検索結果の並び替え**:
 - 類似度スコアの降順（高い順）
@@ -484,143 +363,70 @@ interface SearchResult {
 #### 4.3.1 Search API
 
 **リクエスト**:
-```typescript
-interface SearchRequest {
-  query: string;  // 検索クエリ（必須）
-}
-```
+- `query`: 検索クエリ（必須）
 
 **レスポンス**:
-```typescript
-interface SearchResponse {
-  results: SearchResult[];
-  query: string;
-  timestamp: string;
-}
-```
+- `results`: 検索結果の配列
+- `query`: 検索クエリ
+- `timestamp`: タイムスタンプ
 
 **エラーレスポンス**:
-```typescript
-interface ErrorResponse {
-  error: string;
-  message: string;
-}
-```
+- `error`: エラータイプ
+- `message`: エラーメッセージ
 
 #### 4.3.2 Explanation API（Phase 2）
 
 **リクエスト**:
-```typescript
-interface ExplainRequest {
-  query: string;
-  articleIds: string[];  // 説明対象の記事IDリスト
-}
-```
+- `query`: 検索クエリ
+- `articleIds`: 説明対象の記事IDリスト
 
 **レスポンス**:
-```typescript
-interface ExplainResponse {
-  explanation: string;
-  query: string;
-}
-```
+- `explanation`: 類似度の説明
+- `query`: 検索クエリ
 
 ## 5. 型定義
 
 ### 5.1 共有型定義（packages/shared/types）
 
-```typescript
-// article.ts
-export interface Article {
-  id: string;
-  title: string;
-  url: string;
-  // body: 削除（記事本文は保存しない）
-  tags: string[];
-  createdAt: string; // 投稿日時（ISO 8601）
-  updatedAt: string; // 更新日時（ISO 8601）
-  author: string;
-  likesCount: number;
-}
+**共有型定義**:
+- `Article`: 記事データ（ID、タイトル、URL、タグ、作成日時、更新日時、著者、いいね数）
+- `SearchResult`: 検索結果（Articleを継承、類似度スコアを追加）
+- `SearchRequest`: 検索リクエスト（クエリ）
+- `SearchResponse`: 検索レスポンス（結果配列、クエリ、タイムスタンプ）
 
-// search.ts
-export interface SearchResult extends Article {
-  similarity: number;
-  // summary: 削除（記事本文の要約は表示しない）
-}
-
-// api.ts
-export interface SearchRequest {
-  query: string;
-}
-
-export interface SearchResponse {
-  results: SearchResult[];
-  query: string;
-  timestamp: string;
-}
-```
+**注意**: 記事本文は保存しない（Qiita利用規約遵守のため）
 
 ## 6. ユーティリティ関数
 
 ### 6.1 テキスト処理
 
-```typescript
-// 日付フォーマット
-export function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('ja-JP');
-}
-
-// タグをテキストに変換（Embedding生成用）
-export function formatTagsForEmbedding(tags: string[]): string {
-  return tags.join(' ');
-}
-```
+**ユーティリティ関数**:
+- `formatDate`: 日付を日本語形式でフォーマット
+- `formatTagsForEmbedding`: タグ配列をテキストに変換（Embedding生成用）
 
 ### 6.2 バリデーション
 
-```typescript
-export function validateSearchQuery(query: string): boolean {
-  // 1文字以上500文字以下
-  const trimmed = query.trim();
-  if (trimmed.length === 0 || trimmed.length > 500) {
-    return false;
-  }
-  return true;
-}
-
-// 特殊文字のサニタイズ（XSS対策）
-export function sanitizeQuery(query: string): string {
-  return query
-    .replace(/[<>]/g, '')  // HTMLタグを除去
-    .trim();
-}
-```
+**バリデーション関数**:
+- `validateSearchQuery`: 検索クエリを検証（1文字以上500文字以下）
+- `sanitizeQuery`: 特殊文字をサニタイズ（XSS対策、HTMLタグを除去）
 
 ## 7. エラーハンドリング
 
 ### 7.1 エラー種別
 
-```typescript
-enum ErrorType {
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  API_ERROR = 'API_ERROR',
-  VECTORIZE_ERROR = 'VECTORIZE_ERROR',
-  AI_ERROR = 'AI_ERROR',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR'
-}
-```
+**エラー種別**:
+- `VALIDATION_ERROR`: バリデーションエラー
+- `API_ERROR`: APIエラー
+- `VECTORIZE_ERROR`: Vectorizeエラー
+- `AI_ERROR`: AI Workersエラー
+- `UNKNOWN_ERROR`: 不明なエラー
 
 ### 7.2 エラーレスポンス
 
-```typescript
-interface ErrorResponse {
-  error: ErrorType;
-  message: string;
-  details?: unknown;
-}
-```
+**エラーレスポンス**:
+- `error`: エラー種別
+- `message`: エラーメッセージ
+- `details`: 詳細情報（オプショナル）
 
 ## 8. テスト戦略
 
@@ -657,26 +463,14 @@ interface ErrorResponse {
 ### 9.3 環境変数
 
 **開発環境** (`.env.local`):
-```bash
-# Cloudflare Workers
-VECTORIZE_INDEX_NAME=kusoogle-articles
-SEARCH_API_URL=http://localhost:8787  # ローカル開発用
-QIITA_API_TOKEN=  # 認証不要（公開API）
-
-# Next.js
-NEXT_PUBLIC_SEARCH_API_URL=http://localhost:8787
-```
+- `VECTORIZE_INDEX_NAME`: Vectorizeインデックス名
+- `SEARCH_API_URL`: ローカル開発用のAPI URL
+- `QIITA_ACCESS_TOKEN`: Qiita APIアクセストークン（オプショナル）
+- `NEXT_PUBLIC_SEARCH_API_URL`: Next.js用のAPI URL
 
 **本番環境** (Cloudflare Dashboard):
-```bash
-# Cloudflare Workers
-VECTORIZE_INDEX_NAME=kusoogle-articles
-SEARCH_API_URL=https://search-api.kusoogle.workers.dev
-QIITA_API_TOKEN=  # 認証不要（公開API）
-
-# Next.js (Cloudflare Pages)
-NEXT_PUBLIC_SEARCH_API_URL=https://search-api.kusoogle.workers.dev
-```
+- 環境変数はCloudflare Dashboardで設定
+- シークレットは`wrangler secret put`コマンドで設定
 
 **環境変数の設定方法**:
 - 開発環境: `.env.local`ファイルに記述
@@ -686,25 +480,14 @@ NEXT_PUBLIC_SEARCH_API_URL=https://search-api.kusoogle.workers.dev
 
 #### 9.4.1 Wrangler CLIのセットアップ
 
-```bash
-# Wrangler CLIのインストール（グローバル）
-npm install -g wrangler
-
-# または、プロジェクトローカルにインストール（推奨）
-bun add -d wrangler
-```
+- Wrangler CLIをインストール（グローバルまたはプロジェクトローカル）
+- プロジェクトローカルにインストールする場合は`bun add -d wrangler`
 
 #### 9.4.2 ローカル開発の起動方法
 
 **基本的な使い方**:
-```bash
-# 各Workerディレクトリで実行
-cd apps/workers/search
-wrangler dev
-
-# または、ルートから実行
-bun run dev:search
-bun run dev:data-collection
+- 各Workerディレクトリで`wrangler dev`を実行
+- または、ルートから`bun run dev:search`、`bun run dev:data-collection`を実行
 ```
 
 **`wrangler dev`の動作**:
@@ -781,63 +564,26 @@ ENVIRONMENT = "development"
 
 #### 9.4.5 開発コマンド
 
-```bash
-# パッケージインストール
-bun install
+**主要なコマンド**:
+- `bun install`: パッケージインストール
+- `wrangler login`: Cloudflareにログイン（初回のみ）
+- `wrangler vectorize create`: Vectorizeインデックスの作成（初回のみ）
+- `bun run dev:frontend`: Next.js開発サーバー起動
+- `bun run dev:search`: Search API Worker起動
+- `bun run dev:data-collection`: Data Collection Worker起動
+- `wrangler dev --port`: 特定のポートで起動
+- `wrangler dev --remote`: リモートデバッグ（本番環境のログを確認）
+- `bun run build`: 全プロジェクトをビルド
+- `bun test`: 全テストを実行
+- `bun run deploy:search`: Search API Workerをデプロイ
+- `bun run deploy:data-collection`: Data Collection Workerをデプロイ
 
-# Cloudflareにログイン（初回のみ）
-wrangler login
+### 9.5 package.jsonの構成
 
-# Vectorizeインデックスの作成（初回のみ）
-wrangler vectorize create kusoogle-articles --dimensions=768 --metric=cosine
-
-# フロントエンド開発
-bun run dev:frontend              # Next.js開発サーバー
-
-# Workers開発
-bun run dev:search                # Search API Worker（http://localhost:8787）
-bun run dev:data-collection       # Data Collection Worker
-
-# 特定のポートで起動
-cd apps/workers/search
-wrangler dev --port 8788
-
-# リモートデバッグ（本番環境のログを確認）
-wrangler dev --remote
-
-# ビルド
-bun run build                     # 全プロジェクトをビルド
-
-# テスト
-bun test                          # 全テストを実行
-
-# デプロイ
-bun run deploy:search             # Search API Workerをデプロイ
-bun run deploy:data-collection    # Data Collection Workerをデプロイ
-```
-
-### 9.5 package.jsonの例
-
-```json
-{
-  "name": "kusoogle",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "scripts": {
-    "dev": "bun --bun --cwd apps/frontend dev",
-    "dev:workers": "bun run --filter './apps/workers/*' dev",
-    "build": "bun run --filter './apps/*' build",
-    "test": "bun test",
-    "deploy": "bun run deploy:frontend && bun run deploy:workers"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  }
-}
-```
+**主要な設定**:
+- `workspaces`: Bun workspacesを使用（`apps/*`、`packages/*`）
+- `scripts`: 開発、ビルド、テスト、デプロイ用のスクリプト
+- `devDependencies`: 開発依存関係（`@types/bun`など）
 
 ## 10. 参考資料
 
