@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+:root {
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+    
+    /* カスタムカラーをCSS変数として定義 */
+    --color-primary-50: #fef3f2;
+    --color-primary-500: #f05a4a;
+    --color-primary-600: #de3d2c;
+    --color-secondary-50: #f0f9ff;
+}
+
+body {
+    background: linear-gradient(to bottom right, var(--color-primary-50), var(--color-secondary-50));
+    min-height: 100vh;
+    color: rgb(17 24 39);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* カスタムスタイル */
+@layer components {
+    .card {
+        @apply bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow;
+        @apply p-6 border border-gray-100;
+    }
+
+    .btn-primary {
+        background-color: var(--color-primary-500);
+        color: white;
+        font-weight: 500;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        transition: background-color 0.2s;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--color-primary-600);
+    }
+    
+    .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .input-field {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgb(209 213 219);
+        transition: all 0.2s;
+    }
+    
+    .input-field:focus {
+        outline: none;
+        border-color: transparent;
+        box-shadow: 0 0 0 2px var(--color-primary-500);
+    }
+}
