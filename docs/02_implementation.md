@@ -245,28 +245,30 @@ app.post('/api/search', async (c) => {
       "id": "2015-01",
       "url": "https://qiita.com/advent-calendar/2015/kuso-app",
       "year": 2015,
-      "isLatest": false
+      "autoUpdate": false
     },
     {
       "id": "2015-02",
       "url": "https://qiita.com/advent-calendar/2015/kuso-app2",
       "year": 2015,
-      "isLatest": false
+      "autoUpdate": false
     },
-    // ... 過去年分
+    // ... 自動更新対象外のカレンダー
     {
       "id": "2025-01",
       "url": "https://qiita.com/advent-calendar/2025/kuso-app",
       "year": 2025,
-      "isLatest": true
+      "autoUpdate": true
     }
   ]
 }
 ```
 
+**プロパティ説明**:
+- `autoUpdate`: `true`の場合、Cron Triggerで日次更新を行う。`false`の場合は初期データ取得時のみ処理する。
+
 **設定ファイルの管理**:
 - リポジトリに含める（バージョン管理）
-- 環境変数で上書き可能（将来拡張）
 
 #### 3.2.2 トリガー
 - **初期データ取得**: 手動実行または初期セットアップスクリプト（初回リリース時のみ）
@@ -287,8 +289,8 @@ async function initializeData(env: Env) {
   // 1. 設定ファイルを読み込み
   const config = await loadCalendarConfig();
   
-  // 2. 過去年分のカレンダーを全件取得（isLatest: false）
-  const pastCalendars = config.calendars.filter(c => !c.isLatest);
+  // 2. 自動更新対象外のカレンダーを全件取得（autoUpdate: false）
+  const pastCalendars = config.calendars.filter(c => !c.autoUpdate);
   
   for (const calendar of pastCalendars) {
     // 2-1. カレンダーIDをURLから抽出
@@ -331,7 +333,7 @@ async function processArticle(article: Article, env: Env) {
 }
 ```
 
-#### 3.2.5 日次更新処理（最新年分のみ）
+#### 3.2.5 日次更新処理（autoUpdate: trueのカレンダーのみ）
 
 ```typescript
 // 日次更新用のWorker
@@ -340,8 +342,10 @@ export default {
     // 1. 設定ファイルを読み込み
     const config = await loadCalendarConfig();
     
-    // 2. 最新年分のカレンダーのみ取得（isLatest: true）
-    const latestCalendars = config.calendars.filter(c => c.isLatest);
+    // 2. 自動更新対象のカレンダーのみ取得（autoUpdate: true）
+    const autoUpdateCalendars = config.calendars.filter(c => c.autoUpdate);
+    
+    for (const calendar of autoUpdateCalendars) {
     
     for (const calendar of latestCalendars) {
       // 2-1. カレンダーIDをURLから抽出

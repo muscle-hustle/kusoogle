@@ -183,13 +183,13 @@ AI Workers (タイトル + タグ + 本文をEmbedding化)
 Vectorizeに保存（ベクトルのみ保存、記事本文は保存しない）
 ```
 
-#### 4.1.2 日次データ更新（最新年分のみ）
+#### 4.1.2 日次データ更新（autoUpdate: trueのカレンダーのみ）
 ```
 Cloudflare Cron Triggers (1日1回)
     ↓
 Data Collection Worker（日次更新モード）
     ↓
-設定ファイルから最新年分のカレンダーURLを読み込み
+設定ファイルから自動更新対象のカレンダーURLを読み込み（autoUpdate: true）
     ↓
 既存記事IDを取得（Vectorizeから）
     ↓

@@ -1,0 +1,28 @@
+{
+  "name": "kusoogle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "クソアプリ検索エンジン",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter './apps/*' dev",
+    "dev:frontend": "bun run --filter './apps/frontend' dev",
+    "dev:search": "bun run --filter './apps/workers/search' dev",
+    "dev:data-collection": "bun run --filter './apps/workers/data-collection' dev",
+    "build": "bun run --filter './apps/*' build",
+    "build:shared": "bun run --filter './packages/shared' build",
+    "test": "bun test",
+    "typecheck": "bun run --filter './apps/*' typecheck && bun run --filter './packages/*' typecheck"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}
+
