@@ -1,0 +1,17 @@
+name = "kusoogle-search"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Vectorizeバインディング
+[[vectorize]]
+binding = "VECTORIZE_INDEX"
+index_name = "kusoogle-articles"
+
+# AI Workersバインディング
+[[ai]]
+binding = "AI"
+
+# 環境変数
+[vars]
+ENVIRONMENT = "development"
+

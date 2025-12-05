@@ -8,7 +8,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "hono": "^4.0.0"
+    "hono": "^4.0.0",
+    "@hono/zod-validator": "^0.2.1",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241106.0",
