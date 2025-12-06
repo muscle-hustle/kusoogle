@@ -12,6 +12,7 @@
       "name": "@kusoogle/frontend",
       "version": "1.0.0",
       "dependencies": {
+        "@kusoogle/shared": "workspace:*",
         "next": "^16.0.7",
         "react": "^19.2.1",
         "react-dom": "^19.2.1",
