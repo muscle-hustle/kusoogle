@@ -4,8 +4,9 @@ const nextConfig = {
     env: {
         NEXT_PUBLIC_SEARCH_API_URL: process.env.NEXT_PUBLIC_SEARCH_API_URL || 'http://localhost:8787',
     },
-    // 開発環境ではstandaloneを無効化
-    ...(process.env.NODE_ENV === 'production' && { output: 'standalone' }),
+    // Cloudflare Pages用の設定
+    // output: 'standalone'は削除（Cloudflare Pagesでは不要）
+    // Cloudflare Pagesでは自動的に最適化されたビルドが生成されます
 };
 
 module.exports = nextConfig;

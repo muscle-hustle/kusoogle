@@ -22,10 +22,14 @@ export async function loadCalendarConfig(
       content = configContent;
     } else {
       // ローカル開発環境用（Node.js/Bun）
+      // @ts-ignore - Cloudflare Workers環境ではNode.jsのAPIが使えないため、型チェックをスキップ
       if (typeof process !== 'undefined' && process.versions?.node) {
+        // @ts-ignore - 動的インポートのため型チェックをスキップ
         const fs = await import('fs/promises');
+        // @ts-ignore - 動的インポートのため型チェックをスキップ
         const path = await import('path');
         // プロジェクトルートまたはWorkerディレクトリから相対パスで解決
+        // @ts-ignore - process.cwd()はNode.js環境でのみ利用可能
         const filePath = path.resolve(process.cwd(), configPath);
         content = await fs.readFile(filePath, 'utf-8');
       } else {

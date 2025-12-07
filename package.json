@@ -16,7 +16,11 @@
     "build:shared": "bun run --filter './packages/shared' build",
     "test": "bun test",
     "typecheck": "bun run --filter './apps/*' typecheck && bun run --filter './packages/*' typecheck",
-    "initialize-data": "./scripts/initialize-data.sh"
+    "initialize-data": "./scripts/initialize-data.sh",
+    "deploy:search": "cd apps/workers/search && bun run deploy",
+    "deploy:data-collection": "cd apps/workers/data-collection && bun run deploy",
+    "deploy:workers": "./scripts/deploy-workers.sh",
+    "deploy:frontend": "cd apps/frontend && bun run build && bunx wrangler pages deploy .next --commit-dirty=true"
   },
   "devDependencies": {
     "@types/bun": "latest",

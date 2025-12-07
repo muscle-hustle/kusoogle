@@ -18,16 +18,17 @@ export async function generateEmbedding(
     article.tags.map(t => t.name)
   );
   const text = `${article.title}\n${tagsText}\n${article.body}`;
-  
+
   const result = await ai.run('@cf/baai/bge-base-en-v1.5', {
     text: text,
   });
-  
-  // 記事本文はここで破棄され、ベクトルのみが返される
-  if (!result.data || result.data.length === 0) {
+
+  // 型定義の問題を回避するため、any型を使用
+  const resultData = (result as any).data;
+  if (!resultData || resultData.length === 0) {
     throw new Error('Embedding生成に失敗しました');
   }
-  
-  return result.data[0];
+
+  return resultData[0];
 }
 

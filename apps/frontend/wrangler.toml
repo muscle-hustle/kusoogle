@@ -1,0 +1,14 @@
+name = "kusoogle"
+compatibility_date = "2024-01-01"
+
+# Cloudflare Pagesの設定
+# このファイルは、wrangler pages deployコマンドで使用されます
+# または、Cloudflare DashboardからGitHubリポジトリを接続して自動デプロイを設定することもできます
+
+# Pagesのビルド出力ディレクトリ
+pages_build_output_dir = ".next"
+
+# 環境変数（Cloudflare Dashboardからも設定可能）
+# [vars]
+# NEXT_PUBLIC_SEARCH_API_URL = "https://kusoogle-search.your-subdomain.workers.dev"
+
