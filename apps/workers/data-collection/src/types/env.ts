@@ -8,7 +8,7 @@ export interface Env {
   VECTORIZE_INDEX: VectorizeIndex;
   AI: Ai;
   ENVIRONMENT?: string;
-  CALENDARS_CONFIG?: string; // 設定ファイルのJSON文字列
   QIITA_ACCESS_TOKEN?: string; // Qiita APIアクセストークン（認証時はレート制限が緩和される）
+  INITIALIZE_SECRET?: string; // 初期データ取得エンドポイント用のシークレットトークン
 }
 

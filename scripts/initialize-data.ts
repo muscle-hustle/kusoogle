@@ -87,15 +87,18 @@ async function initializeData(env: LocalEnv): Promise<void> {
 
 // スクリプトが直接実行された場合
 if (import.meta.main) {
-    console.log('初期データ取得を開始します...');
-    console.log('注意: このスクリプトは実際のCloudflare Workers環境で実行する必要があります');
-    console.log('ローカル開発環境では、環境変数を適切に設定してください');
-
-    // TODO: 実際の環境変数からEnvを構築
-    // 現時点では、エラーメッセージを表示
-    console.error('エラー: 環境変数が設定されていません');
-    console.error('Cloudflare Workers環境で実行するか、環境変数を設定してください');
-    process.exit(1);
+    console.log('初期データ取得スクリプト');
+    console.log('');
+    console.log('このスクリプトは、Data Collection Workerの/initializeエンドポイント経由で実行されます。');
+    console.log('');
+    console.log('実行方法:');
+    console.log('  1. Data Collection Workerを起動: bun run dev:data-collection');
+    console.log('  2. 初期データ取得を実行: curl -X POST http://localhost:8787/initialize');
+    console.log('');
+    console.log('または、本番環境にデプロイ後:');
+    console.log('  curl -X POST https://your-worker.your-subdomain.workers.dev/initialize');
+    console.log('');
+    process.exit(0);
 }
 
 export { initializeData };

@@ -18,10 +18,11 @@ crons = ["0 18 * * *"]
 # 環境変数
 [vars]
 ENVIRONMENT = "development"
-# CALENDARS_CONFIG: 設定ファイルのJSON文字列を設定（本番環境ではCloudflare Dashboardで設定）
-# 例: CALENDARS_CONFIG='{"calendars":[{"id":"2025-01","url":"https://qiita.com/advent-calendar/2025/kuso-app","year":2025,"autoUpdate":true}]}'
 
 # シークレット（wrangler secret put コマンドで設定）
 # QIITA_ACCESS_TOKEN: Qiita APIアクセストークン（認証時はレート制限が緩和される）
 # 設定方法: wrangler secret put QIITA_ACCESS_TOKEN
+# INITIALIZE_SECRET: 初期データ取得エンドポイント用のシークレットトークン
+# 設定方法: wrangler secret put INITIALIZE_SECRET
+# 注意: 設定しない場合は認証なしでアクセス可能（開発環境のみ推奨）
 

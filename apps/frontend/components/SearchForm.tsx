@@ -89,10 +89,38 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                     onChange={handleChange}
                     placeholder="クソアプリのアイデアを入力"
                     disabled={isLoading}
-                    className="w-full pl-12 pr-4 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+                    className="w-full pl-12 pr-12 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
                     aria-label="検索クエリ入力"
                     aria-describedby={error ? 'search-error' : undefined}
                 />
+                {/* 入力消去アイコン（入力がある場合のみ表示） */}
+                {query && !isLoading && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setQuery('');
+                            setError(null);
+                        }}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                        aria-label="入力をクリア"
+                    >
+                        <svg
+                            className="w-5 h-5 text-gray-400 hover:text-gray-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden="true"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                            />
+                        </svg>
+                    </button>
+                )}
                 {/* ローディング中のインジケーター */}
                 {isLoading && (
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">

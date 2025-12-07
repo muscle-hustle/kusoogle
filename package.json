@@ -15,7 +15,8 @@
     "build": "bun run --filter './apps/*' build",
     "build:shared": "bun run --filter './packages/shared' build",
     "test": "bun test",
-    "typecheck": "bun run --filter './apps/*' typecheck && bun run --filter './packages/*' typecheck"
+    "typecheck": "bun run --filter './apps/*' typecheck && bun run --filter './packages/*' typecheck",
+    "initialize-data": "./scripts/initialize-data.sh"
   },
   "devDependencies": {
     "@types/bun": "latest",

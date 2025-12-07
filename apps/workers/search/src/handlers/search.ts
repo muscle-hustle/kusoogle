@@ -92,6 +92,12 @@ export async function searchHandler(c: Context<{ Bindings: Env }>): Promise<Resp
                 returnMetadata: true,
             });
             vectorizeResults = searchResults.matches || [];
+
+            // デバッグ用: 検索結果の類似度スコアをログに出力
+            console.log(`検索結果: ${vectorizeResults.length}件`);
+            vectorizeResults.forEach((result, index) => {
+                console.log(`  ${index + 1}. ID: ${result.id}, 類似度: ${result.score?.toFixed(4) || 'N/A'}, タイトル: ${result.metadata?.title || 'N/A'}`);
+            });
         } catch (error) {
             console.error('Vectorize検索エラー:', error);
             return c.json(
@@ -104,8 +110,19 @@ export async function searchHandler(c: Context<{ Bindings: Env }>): Promise<Resp
             );
         }
 
+        // 類似度の閾値でフィルタリング（低い類似度の結果を除外）
+        // 注意: データが少ない場合（1件のみなど）、この閾値により結果が空になる可能性があります
+        // 閾値は調整可能（0.0-1.0の範囲、コサイン類似度）
+        const SIMILARITY_THRESHOLD = 0.5; // 設定値未満の類似度は除外
+        const filteredResults = vectorizeResults.filter((result) => {
+            const score = result.score || 0;
+            return score >= SIMILARITY_THRESHOLD;
+        });
+
+        console.log(`類似度フィルタリング後: ${filteredResults.length}件 (閾値: ${SIMILARITY_THRESHOLD})`);
+
         // 結果を整形
-        const results = formatSearchResults(vectorizeResults);
+        const results = formatSearchResults(filteredResults);
 
         // レスポンスを返却
         const response: SearchResponse = {

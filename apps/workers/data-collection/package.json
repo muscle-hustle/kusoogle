@@ -7,7 +7,9 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "hono": "^4.0.0"
+  },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241106.0",
     "@types/node": "^20.0.0",

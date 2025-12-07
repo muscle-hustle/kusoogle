@@ -13,6 +13,26 @@ export function formatDate(dateString: string): string {
 }
 
 /**
+ * 日付と時刻を日本語形式でフォーマット（時間と分まで表示）
+ * @param dateString ISO 8601形式の日付文字列
+ * @returns フォーマット済みの日時文字列（例: "2025年11月30日 23:56"）
+ */
+export function formatDateTime(dateString: string): string {
+  const date = new Date(dateString);
+  const datePart = date.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  const timePart = date.toLocaleTimeString('ja-JP', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  return `${datePart} ${timePart}`;
+}
+
+/**
  * 日付を相対時間でフォーマット（例: "3日前"）
  * @param dateString ISO 8601形式の日付文字列
  * @returns 相対時間の文字列

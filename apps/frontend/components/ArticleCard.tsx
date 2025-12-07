@@ -1,4 +1,4 @@
-import { formatDate, formatRelativeDate } from '@kusoogle/shared';
+import { formatDateTime, formatRelativeDate } from '@kusoogle/shared';
 import type { SearchResult } from '@kusoogle/shared';
 
 interface ArticleCardProps {
@@ -13,7 +13,14 @@ export default function ArticleCard({ article }: ArticleCardProps) {
       {/* ヘッダー: 著者名と出典 */}
       <div className="flex justify-between items-start mb-3">
         <div className="text-sm text-gray-600">
-          <span className="font-medium">{article.author}</span>
+          <a
+            href={`https://qiita.com/${article.author}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-primary-600 hover:text-primary-700 hover:underline transition-colors"
+          >
+            @{article.author}
+          </a>
         </div>
         <div className="text-xs text-gray-500">
           出典: Qiita
@@ -48,7 +55,11 @@ export default function ArticleCard({ article }: ArticleCardProps) {
 
       {/* メタ情報: 投稿日時といいね数 */}
       <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-        <time dateTime={article.createdAt} className="text-gray-500">
+        <time
+          dateTime={article.createdAt}
+          className="text-gray-500 tooltip"
+          data-tooltip={formatDateTime(article.createdAt)}
+        >
           {formatRelativeDate(article.createdAt)}
         </time>
         <div className="flex items-center gap-1">
