@@ -14,11 +14,13 @@ async function generateQueryEmbedding(query: string, ai: Env['AI']): Promise<num
         text: query,
     });
 
-    if (!result.data || result.data.length === 0) {
+    // 型定義の問題を回避するため、any型を使用
+    const resultData = (result as any).data;
+    if (!resultData || resultData.length === 0) {
         throw new Error('Embedding生成に失敗しました');
     }
 
-    return result.data[0];
+    return resultData[0];
 }
 
 /**
@@ -50,19 +52,33 @@ function formatSearchResults(vectorizeResults: any[]): SearchResult[] {
 export async function searchHandler(c: Context<{ Bindings: Env }>): Promise<Response> {
     try {
         // バリデーション済みのリクエストボディを取得
-        const { query } = c.req.valid('json');
+        // zValidatorミドルウェアでバリデーション済み
+        const body = (c.req as any).valid('json');
+        const { query } = body;
 
         // クエリをEmbedding化
         let queryEmbedding: number[];
         try {
+            // AI Workersバインディングが利用可能か確認
+            if (!c.env.AI) {
+                throw new Error('AI Workersバインディングが設定されていません。wrangler.tomlを確認してください。');
+            }
             queryEmbedding = await generateQueryEmbedding(query, c.env.AI);
         } catch (error) {
             console.error('Embedding生成エラー:', error);
+
+            // エラーコード1031の場合は、開発環境での設定問題を示す
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const isError1031 = errorMessage.includes('1031') || errorMessage.includes('error code: 1031');
+
             return c.json(
                 {
                     error: ErrorType.AI_ERROR,
                     message: '検索クエリの処理に失敗しました',
-                    details: error instanceof Error ? error.message : String(error),
+                    details: errorMessage,
+                    ...(isError1031 && {
+                        hint: '開発環境でAI Workersを使用するには、Cloudflareアカウントにログインしている必要があります。`wrangler login`を実行してください。',
+                    }),
                 },
                 500
             );

@@ -8,7 +8,7 @@ binding = "VECTORIZE_INDEX"
 index_name = "kusoogle-articles"
 
 # AI Workersバインディング
-[[ai]]
+[ai]
 binding = "AI"
 
 # Cron Triggerの設定（JST 3:00 = UTC 18:00）

@@ -8,7 +8,7 @@ binding = "VECTORIZE_INDEX"
 index_name = "kusoogle-articles"
 
 # AI Workersバインディング
-[[ai]]
+[ai]
 binding = "AI"
 
 # 環境変数

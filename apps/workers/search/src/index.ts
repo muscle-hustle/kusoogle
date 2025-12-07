@@ -3,7 +3,7 @@ import { cors } from 'hono/cors';
 import { zValidator } from '@hono/zod-validator';
 import type { Env } from './types/env';
 import { searchHandler } from './handlers/search';
-import { searchRequestSchema } from './schemas/search';
+import { searchRequestSchema } from '@kusoogle/shared';
 
 /**
  * Honoアプリの初期化

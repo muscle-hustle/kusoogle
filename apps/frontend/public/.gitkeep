@@ -1,0 +1,4 @@
+# public ディレクトリ
+# このディレクトリに配置したファイルは、ルートパス（/）からアクセスできます
+# 例: public/logo.png → http://localhost:3000/logo.png
+

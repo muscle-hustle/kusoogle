@@ -10,8 +10,8 @@
   "scripts": {
     "dev": "bun run --filter './apps/*' dev",
     "dev:frontend": "bun run --filter './apps/frontend' dev",
-    "dev:search": "bun run --filter './apps/workers/search' dev",
-    "dev:data-collection": "bun run --filter './apps/workers/data-collection' dev",
+    "dev:search": "cd apps/workers/search && bun run dev",
+    "dev:data-collection": "cd apps/workers/data-collection && bun run dev",
     "build": "bun run --filter './apps/*' build",
     "build:shared": "bun run --filter './packages/shared' build",
     "test": "bun test",
@@ -25,4 +25,3 @@
     "bun": ">=1.0.0"
   }
 }
-
