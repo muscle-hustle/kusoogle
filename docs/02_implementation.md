@@ -78,7 +78,7 @@ kusoogle/
 **役割**: 検索クエリの入力を受け付ける
 
 **実装方針**:
-- Server Actionを使用（Next.js 15の機能を活用）
+- Server Actionを使用（Next.js 16 / App Router）
 - Cloudflare WorkersのSearch APIを呼び出す
 - リアルタイム検索は実装しない（コスト削減）
 - フォーム送信で検索実行
@@ -589,7 +589,7 @@ ENVIRONMENT = "development"
 
 ### 10.1 公式ドキュメント
 
-- [Next.js 15 Documentation](https://nextjs.org/docs)
+- [Next.js 16 Documentation](https://nextjs.org/docs)
 - [Hono Documentation](https://hono.dev/)
 - [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
 - [TypeScript Documentation](https://www.typescriptlang.org/docs/)

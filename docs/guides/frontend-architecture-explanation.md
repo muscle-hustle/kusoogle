@@ -95,7 +95,7 @@ export default function RootLayout({ children }) {
 └─────────────────────────────────────────────────────────┘
                         ↕ HTTP通信
 ┌─────────────────────────────────────────────────────────┐
-│  Next.jsサーバー（Vercel/Cloudflare Pagesなど）          │
+│  Next.js (Cloudflare Workers, @opennextjs/cloudflare)   │
 │  ┌───────────────────────────────────────────────────┐ │
 │  │ 'use server' Server Action                        │ │
 │  │ - search.ts (searchArticles関数)                   │ │
