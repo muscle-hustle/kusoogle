@@ -1,23 +1,31 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { searchQuerySchema, getValidationErrorMessage } from '@kusoogle/shared';
 
 interface SearchFormProps {
     onSearch: (query: string) => void;
+    onClear?: () => void;
     isLoading?: boolean;
+    initialQuery?: string;
 }
 
 // 検索例のリスト
 const SEARCH_EXAMPLES = [
-    'タスク管理',
-    '目覚まし時計',
-    'ゲームアプリ',
+    '投稿も返信も一切できず、AIの投稿にただ「草」を送信するだけのSNS',
+    '予定日を設定すると期限前に自動延期されるリマインダーアプリ',
+    '筋肉ごとに陣営が分かれる人狼ゲーム',
 ];
 
-export default function SearchForm({ onSearch, isLoading = false }: SearchFormProps) {
-    const [query, setQuery] = useState('');
+export default function SearchForm({ onSearch, onClear, isLoading = false, initialQuery = '' }: SearchFormProps) {
+    const [query, setQuery] = useState(initialQuery);
     const [error, setError] = useState<string | null>(null);
+
+    // 外部から初期クエリが変わった場合に同期
+    useEffect(() => {
+        setQuery(initialQuery);
+        setError(null);
+    }, [initialQuery]);
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -100,6 +108,10 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                         onClick={() => {
                             setQuery('');
                             setError(null);
+                            // 検索結果もクリア
+                            if (onClear) {
+                                onClear();
+                            }
                         }}
                         className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                         aria-label="入力をクリア"

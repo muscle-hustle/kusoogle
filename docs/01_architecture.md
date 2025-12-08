@@ -21,8 +21,9 @@
          │ HTTPS
          ▼
 ┌─────────────────────────────────────┐
-│   Cloudflare Pages (Edge)          │
-│   Next.js 15 (Frontend)            │
+│   Cloudflare Workers (Edge)        │
+│   Next.js 16 (Frontend)            │
+│   - @opennextjs/cloudflare         │
 │   - React Server Components         │
 │   - Server Actions                  │
 │   - Edge Runtime                    │
@@ -61,13 +62,13 @@
 ### 2.1 フロントエンド
 
 #### 2.1.1 コア技術
-- **Framework**: Next.js 15+ (App Router)
+- **Framework**: Next.js 16+ (App Router)
   - React Server Components（RSC）を活用したサーバーサイドレンダリング
   - Server Actionsによるサーバーサイド処理
   - Edge Runtimeによるエッジでの実行
 - **Language**: TypeScript 5.x
 - **Styling**: Tailwind CSS 4.x（最新版）
-- **Deployment**: Cloudflare Pages（エッジデプロイ）
+- **Deployment**: Cloudflare Workers（`@opennextjs/cloudflare`を使用してエッジデプロイ）
 
 #### 2.1.2 最新技術要素の採用理由
 - **React Server Components**: サーバーサイドでのコンポーネント実行により、初期表示の高速化とバンドルサイズの削減
@@ -302,9 +303,11 @@ LLMで説明生成
 ## 7. デプロイメント
 
 ### 7.1 フロントエンド
-- **Cloudflare Pages**: `wrangler pages deploy`
+- **Cloudflare Workers**: `@opennextjs/cloudflare`を使用してデプロイ
+  - `opennextjs-cloudflare build` - Cloudflare Workers用のビルド
+  - `opennextjs-cloudflare deploy` - Workersにデプロイ
 - エッジでの自動デプロイ
-- プレビューデプロイメント対応
+- Service BindingによりSearch API Workerと直接通信可能
 
 ### 7.2 バックエンド
 - **Cloudflare Workers**: `wrangler deploy`
@@ -374,7 +377,7 @@ LLMで説明生成
 ## 11. 技術選定の理由
 
 ### 11.1 最新技術を選んだ理由
-- **Next.js 15**: 最新のReact Server Components、Server Actionsを活用
+- **Next.js 16**: 最新のReact Server Components、Server Actionsを活用
 - **Hono**: Express.jsより軽量で、エッジ環境に最適
 - **TypeScript 5.x**: 最新の型システム機能を活用
 - **Tailwind CSS 4.x**: 最新の機能とパフォーマンス改善
@@ -396,6 +399,7 @@ LLMで説明生成
 - [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
 - [Cloudflare Vectorize Documentation](https://developers.cloudflare.com/vectorize/)
 - [Cloudflare AI Workers Documentation](https://developers.cloudflare.com/workers-ai/)
-- [Next.js 15 Documentation](https://nextjs.org/docs)
+- [Next.js 16 Documentation](https://nextjs.org/docs)
+- [@opennextjs/cloudflare Documentation](https://github.com/cloudflare/next-on-pages)
 - [Hono Documentation](https://hono.dev/)
 - [Qiita API v2 Documentation](https://qiita.com/api/v2/docs)

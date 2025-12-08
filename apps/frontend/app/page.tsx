@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import SearchPageClient from '../components/SearchPageClient';
 import Footer from '../components/Footer';
 import Image from 'next/image';
@@ -30,7 +31,15 @@ export default function HomePage() {
 
             {/* Main Content - インタラクティブな部分はクライアントコンポーネント */}
             <main className="flex-1 w-full px-4 pb-8">
-                <SearchPageClient />
+                <Suspense
+                    fallback={
+                        <div className="max-w-4xl mx-auto text-center text-gray-500">
+                            検索UIを読み込み中...
+                        </div>
+                    }
+                >
+                    <SearchPageClient />
+                </Suspense>
             </main>
 
             {/* Footer - クレジット表記とGitHubリンク */}

@@ -3,6 +3,10 @@
  * クレジット表記とGitHubリンクを表示
  */
 export default function Footer() {
+    const shareText = 'kusoogle - 世界初のクソアプリ検索エンジン #クソアプリ #kusoogle';
+    const shareUrl = 'https://kusoogle.muscle-hustle.workers.dev/';
+    const xShareLink = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+
     return (
         <footer className="w-full py-6 px-4 mt-auto border-t border-gray-200 bg-white">
             <div className="max-w-4xl mx-auto">
@@ -18,7 +22,7 @@ export default function Footer() {
                     <div className="flex items-center gap-4">
                         {/* X（旧Twitter）シェアボタン */}
                         <a
-                            href="https://x.com/intent/tweet?text=kusoogle%20-%20%E3%82%AF%E3%82%BD%E3%82%A2%E3%83%97%E3%83%AA%E6%A4%9C%E7%B4%A2%E3%82%A8%E3%83%B3%E3%82%B8%E3%83%B3%20%23%E3%82%AF%E3%82%BD%E3%82%A2%E3%83%97%E3%83%AA&url=https://kusoogle.com"
+                            href={xShareLink}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-gray-600 hover:text-[#1DA1F2] transition-colors"

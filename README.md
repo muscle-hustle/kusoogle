@@ -34,7 +34,6 @@
 - **バックエンド**: Cloudflare Workers (TypeScript)
 - **ベクトルDB**: Cloudflare Vectorize
 - **AI**: Cloudflare AI Workers
-- **デプロイ**: Cloudflare Pages
 
 詳細は [アーキテクチャ仕様書](./docs/01_architecture.md) を参照してください。
 

@@ -3,9 +3,11 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
 # Vectorizeバインディング
+# v2: 要約アプローチ評価用の新しいインデックス
+# 既存の kusoogle-articles は比較用に残す
 [[vectorize]]
 binding = "VECTORIZE_INDEX"
-index_name = "kusoogle-articles"
+index_name = "kusoogle-articles-v2"
 
 # AI Workersバインディング
 [ai]

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import SearchForm from './SearchForm';
 import SearchResults from './SearchResults';
 import { searchArticles } from '../app/actions/search';
@@ -11,10 +12,18 @@ import type { SearchResult } from '@kusoogle/shared';
  * インタラクティブな機能（状態管理、検索処理）を担当
  */
 export default function SearchPageClient() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [results, setResults] = useState<SearchResult[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [query, setQuery] = useState<string>('');
+    const [initializedFromParams, setInitializedFromParams] = useState(false);
+
+    const initialQuery = useMemo(() => {
+        const param = searchParams.get('q') ?? searchParams.get('query');
+        return param ?? '';
+    }, [searchParams]);
 
     const handleSearch = async (searchQuery: string) => {
         // 状態をリセット
@@ -22,6 +31,13 @@ export default function SearchPageClient() {
         setQuery(searchQuery);
         setIsLoading(true);
         setResults([]);
+
+        // URLクエリを更新（シェア用）
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            params.set('q', searchQuery);
+            router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
+        }
 
         try {
             // Server Actionで検索を実行
@@ -38,11 +54,35 @@ export default function SearchPageClient() {
         }
     };
 
+    const handleClear = () => {
+        // 検索結果とクエリをクリア
+        setResults([]);
+        setQuery('');
+        setError(null);
+        // クエリパラメータも消す
+        if (typeof window !== 'undefined') {
+            router.replace(window.location.pathname, { scroll: false });
+        }
+    };
+
+    // 初回マウント時にクエリパラメータから検索を実行
+    useEffect(() => {
+        if (initializedFromParams) return;
+        if (!initialQuery) return;
+        setInitializedFromParams(true);
+        handleSearch(initialQuery);
+    }, [initialQuery, initializedFromParams]);
+
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             {/* Search Form */}
             <div className="mb-8">
-                <SearchForm onSearch={handleSearch} isLoading={isLoading} />
+                <SearchForm
+                    onSearch={handleSearch}
+                    onClear={handleClear}
+                    isLoading={isLoading}
+                    initialQuery={initialQuery}
+                />
             </div>
 
             {/* Error Message */}

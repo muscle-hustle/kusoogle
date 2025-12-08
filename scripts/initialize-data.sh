@@ -2,6 +2,18 @@
 
 # 初期データ取得スクリプト
 # Data Collection Workerの/initializeエンドポイントを連続で呼び出し、全記事を処理する
+#
+# 使用方法:
+#   # 全カレンダーを処理
+#   ./scripts/initialize-data.sh
+#
+#   # 特定の年のカレンダーのみを処理
+#   ./scripts/initialize-data.sh 2025
+#
+#   # 環境変数で設定
+#   export DATA_COLLECTION_URL=http://localhost:8788
+#   export INITIALIZE_SECRET=your-secret-token
+#   ./scripts/initialize-data.sh 2024
 
 # プロジェクトルートに移動
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,11 +42,24 @@ if [ -f .env.local ]; then
     done < .env.local
 fi
 
+# 引数の解析
+YEAR="${1:-}"  # 第1引数: 年指定（オプション、例: 2025）
+
 # 設定
 DATA_COLLECTION_URL="${DATA_COLLECTION_URL:-http://localhost:8788}"
 INITIALIZE_SECRET="${INITIALIZE_SECRET:-}"  # シークレットトークン（環境変数から取得）
 MAX_ITERATIONS=1000  # 最大繰り返し回数（無限ループを防ぐ）
 DELAY_BETWEEN_REQUESTS=1  # リクエスト間の待機時間（秒）
+
+# 引数の検証
+if [ -n "$YEAR" ]; then
+    # 年が数値かどうかを確認
+    if ! [[ "$YEAR" =~ ^[0-9]{4}$ ]]; then
+        echo "エラー: 年は4桁の数値で指定してください（例: 2025）"
+        echo "使用方法: $0 [年]"
+        exit 1
+    fi
+fi
 
 # カウンター
 iteration=0
@@ -47,10 +72,20 @@ if [ -n "$INITIALIZE_SECRET" ]; then
 else
     echo "警告: INITIALIZE_SECRETが設定されていません。認証なしで実行します。"
 fi
+if [ -n "$YEAR" ]; then
+    echo "年指定: $YEAR 年のカレンダーのみを処理します"
+else
+    echo "年指定: なし（全カレンダーを処理します）"
+fi
 echo ""
 
 # 最初のリクエスト
-url="$DATA_COLLECTION_URL/initialize"
+# 年が指定されている場合はクエリパラメータに追加
+if [ -n "$YEAR" ]; then
+    url="$DATA_COLLECTION_URL/initialize?year=$YEAR"
+else
+    url="$DATA_COLLECTION_URL/initialize"
+fi
 
 while [ $iteration -lt $MAX_ITERATIONS ] && [ "$completed" != "true" ]; do
     iteration=$((iteration + 1))
@@ -121,6 +156,16 @@ while [ $iteration -lt $MAX_ITERATIONS ] && [ "$completed" != "true" ]; do
         else
             url="$next_url"
         fi
+        
+        # 年が指定されている場合、nextUrlに年パラメータが含まれていない場合は追加
+        if [ -n "$YEAR" ] && [[ ! "$url" == *"year=$YEAR"* ]]; then
+            # URLに既にクエリパラメータがある場合は&、ない場合は?を追加
+            if [[ "$url" == *"?"* ]]; then
+                url="${url}&year=$YEAR"
+            else
+                url="${url}?year=$YEAR"
+            fi
+        fi
     else
         # jqが利用できない場合、レスポンスをそのまま表示
         echo "レスポンス: $body"
@@ -140,7 +185,24 @@ while [ $iteration -lt $MAX_ITERATIONS ] && [ "$completed" != "true" ]; do
             exit 1
         fi
         
-        url="$next_url"
+        # nextUrlが絶対URLの場合、ローカル開発環境のURLに置き換える
+        if [[ "$next_url" == http* ]]; then
+            # パスとクエリパラメータを抽出
+            next_path=$(echo "$next_url" | sed -E 's|https?://[^/]+(.*)|\1|')
+            url="${DATA_COLLECTION_URL}${next_path}"
+        else
+            url="$next_url"
+        fi
+        
+        # 年が指定されている場合、nextUrlに年パラメータが含まれていない場合は追加
+        if [ -n "$YEAR" ] && [[ ! "$url" == *"year=$YEAR"* ]]; then
+            # URLに既にクエリパラメータがある場合は&、ない場合は?を追加
+            if [[ "$url" == *"?"* ]]; then
+                url="${url}&year=$YEAR"
+            else
+                url="${url}?year=$YEAR"
+            fi
+        fi
     fi
     
     echo ""

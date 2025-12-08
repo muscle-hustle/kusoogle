@@ -16,7 +16,8 @@ import { processArticle } from '../utils/vectorize';
 export async function initializeData(
     env: Env,
     calendarId?: string,
-    articleIndex: number = 0
+    articleIndex: number = 0,
+    year?: number
 ): Promise<{
     processed: string;
     calendarId: string;
@@ -34,7 +35,19 @@ export async function initializeData(
         const config = calendarsConfig;
 
         // 2. 全てのカレンダーを取得（autoUpdate: true/false問わず）
-        const allCalendars = config;
+        // 年が指定されている場合は、その年のカレンダーのみをフィルタリング
+        let allCalendars = config;
+        if (year !== undefined) {
+            allCalendars = config.filter(c => c.year === year);
+            if (allCalendars.length === 0) {
+                return {
+                    processed: '',
+                    calendarId: '',
+                    articleIndex: 0,
+                    completed: true,
+                };
+            }
+        }
 
         // 3. 処理するカレンダーを決定
         let targetCalendarIndex = 0;
@@ -160,12 +173,14 @@ export async function initializeHandler(c: Context<{ Bindings: Env }>) {
             }
         }
 
-        // クエリパラメータからカレンダーIDと記事インデックスを取得
+        // クエリパラメータからカレンダーID、記事インデックス、年を取得
         const calendarId = c.req.query('calendarId') || undefined;
         const articleIndex = parseInt(c.req.query('articleIndex') || '0', 10);
+        const yearParam = c.req.query('year');
+        const year = yearParam ? parseInt(yearParam, 10) : undefined;
 
         // 1記事を処理（時間制限を考慮）
-        const result = await initializeData(c.env, calendarId, articleIndex);
+        const result = await initializeData(c.env, calendarId, articleIndex, year);
 
         // 次の記事またはカレンダーがある場合は、次のリクエストのURLを返す
         const response: {
@@ -194,12 +209,13 @@ export async function initializeHandler(c: Context<{ Bindings: Env }>) {
         if (!result.completed) {
             // 次の記事またはカレンダーがある場合
             const url = new URL(c.req.url);
+            const yearParam = year !== undefined ? `&year=${year}` : '';
             if (result.nextArticleIndex !== undefined) {
                 // 同じカレンダーの次の記事
-                response.nextUrl = `${url.origin}/initialize?calendarId=${result.calendarId}&articleIndex=${result.nextArticleIndex}`;
+                response.nextUrl = `${url.origin}/initialize?calendarId=${result.calendarId}&articleIndex=${result.nextArticleIndex}${yearParam}`;
             } else if (result.nextCalendarId) {
                 // 次のカレンダーの最初の記事
-                response.nextUrl = `${url.origin}/initialize?calendarId=${result.nextCalendarId}&articleIndex=0`;
+                response.nextUrl = `${url.origin}/initialize?calendarId=${result.nextCalendarId}&articleIndex=0${yearParam}`;
             }
         }
 
