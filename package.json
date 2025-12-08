@@ -20,7 +20,7 @@
     "deploy:search": "cd apps/workers/search && bun run deploy",
     "deploy:data-collection": "cd apps/workers/data-collection && bun run deploy",
     "deploy:workers": "./scripts/deploy-workers.sh",
-    "deploy:frontend": "cd apps/frontend && bun run build && bunx wrangler pages deploy .next --commit-dirty=true"
+    "deploy:frontend": "cd apps/frontend && NODE_ENV=production bun run build && bun run deploy:cf"
   },
   "devDependencies": {
     "@types/bun": "latest",

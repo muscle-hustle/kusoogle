@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "build:cf": "NODE_ENV=production opennextjs-cloudflare build",
+    "preview:cf": "NODE_ENV=production opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy:cf": "NODE_ENV=production opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
@@ -17,6 +20,7 @@
     "zod": "^3.22.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.14.4",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",

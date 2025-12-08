@@ -11,7 +11,18 @@ index_name = "kusoogle-articles"
 [ai]
 binding = "AI"
 
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+persist = true
+
 # 環境変数
 [vars]
-ENVIRONMENT = "development"
-
+ENVIRONMENT = "production"

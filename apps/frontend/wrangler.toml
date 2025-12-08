@@ -1,14 +1,34 @@
 name = "kusoogle"
-compatibility_date = "2024-01-01"
+main = ".open-next/worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+# Cloudflare Workersの設定
+# @opennextjs/cloudflareを使用してNext.jsのサーバーコンポーネントとサーバーアクションをサポート
 
-# Cloudflare Pagesの設定
-# このファイルは、wrangler pages deployコマンドで使用されます
-# または、Cloudflare DashboardからGitHubリポジトリを接続して自動デプロイを設定することもできます
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
 
-# Pagesのビルド出力ディレクトリ
-pages_build_output_dir = ".next"
+# Service Binding: Search API Workerへの直接アクセス
+# これにより、エラーコード1042を回避できます
+[[services]]
+binding = "SEARCH_API"
+service = "kusoogle-search"
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+persist = true
 
 # 環境変数（Cloudflare Dashboardからも設定可能）
-# [vars]
-# NEXT_PUBLIC_SEARCH_API_URL = "https://kusoogle-search.your-subdomain.workers.dev"
+[vars]
+NEXT_PUBLIC_SEARCH_API_URL = "https://kusoogle-search.muscle-hustle.workers.dev"
+ENVIRONMENT = "production"
 

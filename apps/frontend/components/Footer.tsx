@@ -18,7 +18,7 @@ export default function Footer() {
                     <div className="flex items-center gap-4">
                         {/* X（旧Twitter）シェアボタン */}
                         <a
-                            href="https://x.com/intent/tweet?text=kusoogle%20-%20%E3%82%AF%E3%82%BD%E3%82%A2%E3%83%97%E3%83%AA%E6%A4%9C%E7%B4%A2%E3%82%A8%E3%83%B3%E3%82%B8%E3%83%B3&url=https://kusoogle.com"
+                            href="https://x.com/intent/tweet?text=kusoogle%20-%20%E3%82%AF%E3%82%BD%E3%82%A2%E3%83%97%E3%83%AA%E6%A4%9C%E7%B4%A2%E3%82%A8%E3%83%B3%E3%82%B8%E3%83%B3%20%23%E3%82%AF%E3%82%BD%E3%82%A2%E3%83%97%E3%83%AA&url=https://kusoogle.com"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-gray-600 hover:text-[#1DA1F2] transition-colors"

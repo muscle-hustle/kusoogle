@@ -2,7 +2,8 @@
 
 ## 概要
 
-このガイドでは、kusoogleをCloudflare WorkersとCloudflare Pagesにデプロイする手順を説明します。
+このガイドでは、kusoogleをCloudflare Workersにデプロイする手順を説明します。
+Frontendは`@opennextjs/cloudflare`を使用してCloudflare Workersとしてデプロイされます。
 
 ## 前提条件
 
@@ -87,42 +88,50 @@ bunx wrangler secret put INITIALIZE_SECRET
 
 `wrangler.toml`の`[vars]`セクションで設定できます。本番環境用の設定を追加する場合は、`wrangler.toml`を編集するか、Cloudflare Dashboardから設定してください。
 
-### 4. Cloudflare Pagesのデプロイ
+### 4. Frontend Workerのデプロイ
 
-#### 4.1 ビルド
+**重要**: Next.jsのサーバーコンポーネントとサーバーアクションを使用しているため、`@opennextjs/cloudflare`を使用してCloudflare Workersにデプロイします。
+
+#### 4.1 ビルドとデプロイ
+
+```bash
+# ルートディレクトリから実行（推奨）
+bun run deploy:frontend
+```
+
+または、直接実行：
 
 ```bash
 cd apps/frontend
-bun run build
+bun run deploy:cf
 ```
 
-#### 4.2 デプロイ
+このコマンドは以下を実行します：
+1. `opennextjs-cloudflare build` - Cloudflare Workers用のビルド（`.open-next/`に出力）
+2. `opennextjs-cloudflare deploy` - Workersにデプロイ
 
-**方法1: Wrangler CLIを使用（推奨）**
+#### 4.2 Service Bindingの設定
 
-```bash
-cd apps/frontend
-bunx wrangler pages deploy .next
+`apps/frontend/wrangler.toml`で`SEARCH_API` Service Bindingを設定済みです。
+これにより、Frontend WorkerからSearch API Workerへの直接アクセスが可能になり、エラーコード1042を回避できます。
+
+```toml
+[[services]]
+binding = "SEARCH_API"
+service = "kusoogle-search"
 ```
-
-**方法2: Cloudflare Dashboardからデプロイ**
-
-1. Cloudflare Dashboardにログイン
-2. 「Workers & Pages」→「Create application」→「Pages」を選択
-3. プロジェクトを接続（GitHubリポジトリを接続するか、直接アップロード）
-4. ビルド設定を指定：
-   - Build command: `cd apps/frontend && bun run build`
-   - Build output directory: `apps/frontend/.next`
-   - Root directory: `/`（プロジェクトルート）
 
 #### 4.3 環境変数の設定
 
-Cloudflare Pagesの環境変数を設定します：
+環境変数は`apps/frontend/wrangler.toml`の`[vars]`セクションで設定済みです：
 
-1. Cloudflare Dashboard → 「Workers & Pages」→ プロジェクトを選択
-2. 「Settings」→「Environment variables」を開く
-3. 以下の環境変数を設定：
-   - `NEXT_PUBLIC_SEARCH_API_URL`: Search API WorkerのURL（例: `https://kusoogle-search.your-subdomain.workers.dev`）
+```toml
+[vars]
+NEXT_PUBLIC_SEARCH_API_URL = "https://kusoogle-search.muscle-hustle.workers.dev"
+ENVIRONMENT = "production"
+```
+
+追加の設定が必要な場合は、Cloudflare Dashboardからも設定できます。
 
 ### 5. 動作確認
 
@@ -145,14 +154,15 @@ curl -X POST https://kusoogle-search.your-subdomain.workers.dev/api/search \
 curl https://kusoogle-data-collection.your-subdomain.workers.dev/health
 ```
 
-#### 5.3 フロントエンドの確認
+#### 5.3 Frontend Workerの確認
 
-ブラウザでCloudflare PagesのURLにアクセスし、以下を確認：
+ブラウザでFrontend WorkerのURLにアクセスし、以下を確認：
 
 1. ページが正しく表示される
 2. 検索フォームが表示される
 3. 検索が動作する
 4. 検索結果が表示される
+5. Service Binding経由でSearch API Workerにアクセスできているか（ログで確認）
 
 ## デプロイ後の確認事項
 
@@ -211,6 +221,16 @@ bunx wrangler vectorize create kusoogle-articles --dimensions=768 --metric=cosin
 **対処法**:
 - `apps/workers/search/src/index.ts`のCORS設定を確認
 - 本番環境のオリジンを許可リストに追加
+- Service Bindingを使用している場合は、CORSエラーは発生しません
+
+### エラー: error code 1042（Cloudflare Workers DNS/network error）
+
+**原因**: Frontend WorkerからSearch API Workerへのfetchが失敗している
+
+**対処法**:
+- Service Bindingを設定しているか確認（`apps/frontend/wrangler.toml`）
+- `compatibility_flags`に`global_fetch_strictly_public`が含まれているか確認
+- Service Bindingを使用することで、このエラーを回避できます
 
 ## 本番環境での注意事項
 
@@ -233,6 +253,7 @@ bunx wrangler vectorize create kusoogle-articles --dimensions=768 --metric=cosin
 ## 参考資料
 
 - [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
-- [Cloudflare Pages Documentation](https://developers.cloudflare.com/pages/)
+- [@opennextjs/cloudflare Documentation](https://opennext.js.org/cloudflare)
 - [Wrangler CLI Documentation](https://developers.cloudflare.com/workers/wrangler/)
+- [Cloudflare Service Bindings](https://developers.cloudflare.com/workers/configuration/bindings/service-bindings/)
 
