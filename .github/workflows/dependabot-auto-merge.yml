@@ -7,6 +7,10 @@ on:
       - '**/package.json'
       - 'bun.lock'
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   verify:
     name: Verify Dependencies Update
@@ -48,17 +52,36 @@ jobs:
             })
 
       - name: Auto-merge on success
-        if: |
-          success() &&
-          contains(github.event.pull_request.labels.*.name, 'patch-update')
+        if: success()
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.pulls.merge({
+            // PRのラベルを取得
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            
+            const labels = pr.labels.map(label => label.name);
+            const hasPatchUpdateLabel = labels.includes('patch-update');
+            
+            if (!hasPatchUpdateLabel) {
+              console.log('❌ patch-updateラベルが付いていないため、マージをスキップします');
+              console.log('現在のラベル:', labels);
+              return;
+            }
+            
+            console.log('✅ 検証成功、自動マージを実行します');
+            
+            // マージを実行
+            await github.rest.pulls.merge({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.issue.number,
               merge_method: 'squash',
-              commit_title: context.payload.pull_request.title,
-              commit_message: context.payload.pull_request.body || context.payload.pull_request.title
-            })
+              commit_title: pr.title,
+              commit_message: pr.body || pr.title
+            });
+            
+            console.log('✅ マージが完了しました');
