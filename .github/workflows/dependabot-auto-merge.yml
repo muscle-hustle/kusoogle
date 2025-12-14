@@ -10,16 +10,23 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   verify:
     name: Verify Dependencies Update
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -51,37 +58,17 @@ jobs:
               body: '❌ ビルドまたは型チェックに失敗しました。手動で確認してください。'
             })
 
-      - name: Auto-merge on success
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // PRのラベルを取得
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
-            
-            const labels = pr.labels.map(label => label.name);
-            const hasPatchUpdateLabel = labels.includes('patch-update');
-            
-            if (!hasPatchUpdateLabel) {
-              console.log('❌ patch-updateラベルが付いていないため、マージをスキップします');
-              console.log('現在のラベル:', labels);
-              return;
-            }
-            
-            console.log('✅ 検証成功、自動マージを実行します');
-            
-            // マージを実行
-            await github.rest.pulls.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-              merge_method: 'squash',
-              commit_title: pr.title,
-              commit_message: pr.body || pr.title
-            });
-            
-            console.log('✅ マージが完了しました');
+      - name: Auto-merge patch updates
+        if: |
+          success() &&
+          steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: |
+          echo "✅ パッチ更新を検出しました。自動マージを実行します。"
+          gh pr merge --squash --delete-branch "$PR_URL" || {
+            echo "❌ マージに失敗しました。"
+            exit 1
+          }
+          echo "✅ マージが完了しました。"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
