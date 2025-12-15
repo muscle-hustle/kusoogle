@@ -4,9 +4,10 @@ updates:
   - package-ecosystem: "bun"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: weekly
+      day: monday
       time: "09:00"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
     # パッチ更新のみ（セキュリティ修正を含む）
     versioning-strategy: increase-if-necessary
@@ -26,9 +27,10 @@ updates:
   - package-ecosystem: "bun"
     directory: "/apps/frontend"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: weekly
+      day: monday
       time: "09:00"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
     versioning-strategy: increase-if-necessary
     labels:
@@ -46,9 +48,10 @@ updates:
   - package-ecosystem: "bun"
     directory: "/apps/workers/search"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: weekly
+      day: monday
       time: "09:00"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
     versioning-strategy: increase-if-necessary
     labels:
@@ -66,9 +69,10 @@ updates:
   - package-ecosystem: "bun"
     directory: "/apps/workers/data-collection"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: weekly
+      day: monday
       time: "09:00"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
     versioning-strategy: increase-if-necessary
     labels:
@@ -86,9 +90,10 @@ updates:
   - package-ecosystem: "bun"
     directory: "/packages/shared"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: weekly
+      day: monday
       time: "09:00"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
     versioning-strategy: increase-if-necessary
     labels:
